@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FreshTeacher — Free Image Prompt Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBF6EF;
+  --surface:#FFFFFF;
+  --surface2:#F5EDE2;
+  --surface3:#EDE0CF;
+  --border:rgba(180,140,100,.18);
+  --border2:rgba(180,140,100,.28);
+  --rust:#C45C3E;
+  --rust-light:#E07A5F;
+  --rust-dark:#9E3F2B;
+  --rust-pale:#FAE8E0;
+  --rust-glow:rgba(196,92,62,.12);
+  --sand:#D4B896;
+  --sand-light:#F0E4D0;
+  --text:#2D2420;
+  --text-mid:#6B5A50;
+  --text-dim:#A89080;
+  --green:#4A8C5C;
+  --r:10px;
+  --r-lg:18px;
+  --r-xl:26px;
+  --sh:0 2px 16px rgba(100,60,30,.08);
+  --sh2:0 6px 28px rgba(100,60,30,.12);
+  --t:.2s ease;
+}
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+
+body{
+  font-family:'Outfit',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+
+/* subtle texture */
+body::after{
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='.025'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:9999;
+}
+
+/* ambient warm glow top */
+.ambient{
+  position:fixed;top:-180px;left:50%;transform:translateX(-50%);
+  width:800px;height:360px;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(196,92,62,.07) 0%,transparent 70%);
+  pointer-events:none;z-index:0;
+}
+
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:var(--sand-light);}
+::-webkit-scrollbar-thumb{background:var(--sand);border-radius:99px;}
+::-webkit-scrollbar-thumb:hover{background:var(--rust-light);}
+
+/* ── PAGE ── */
+.page{
+  position:relative;z-index:1;
+  max-width:920px;margin:0 auto;
+  padding:0 24px 80px;
+}
+
+/* ── HEADER ── */
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:24px 0 0;
+  margin-bottom:52px;
+}
+.logo{
+  display:flex;align-items:center;gap:10px;
+  text-decoration:none;
+}
+.logo-mark{
+  width:34px;height:34px;border-radius:9px;
+  background:linear-gradient(135deg,var(--rust-dark),var(--rust-light));
+  display:flex;align-items:center;justify-content:center;
+  font-size:.95rem;
+  box-shadow:0 3px 10px rgba(196,92,62,.3);
+}
+.logo-name{
+  font-family:'Instrument Serif',serif;
+  font-size:1.25rem;color:var(--text);
+  letter-spacing:-.01em;
+}
+.logo-name em{color:var(--rust);font-style:normal;}
+
+.badge-free{
+  font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  background:var(--rust-pale);color:var(--rust);
+  border:1px solid rgba(196,92,62,.2);
+  padding:4px 10px;border-radius:99px;
+}
+
+/* ── HERO ── */
+.hero{text-align:center;margin-bottom:48px;}
+.hero-eyebrow{
+  font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--rust);margin-bottom:16px;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.hero-eyebrow::before,.hero-eyebrow::after{
+  content:'';display:block;width:36px;height:1px;background:var(--sand);
+}
+.hero-title{
+  font-family:'Instrument Serif',serif;
+  font-size:clamp(2rem,6vw,3.2rem);
+  line-height:1.1;letter-spacing:-.02em;
+  color:var(--text);margin-bottom:16px;
+}
+.hero-title em{font-style:italic;color:var(--rust);}
+.hero-sub{
+  font-size:.975rem;color:var(--text-mid);
+  max-width:500px;margin:0 auto 28px;
+  line-height:1.75;font-weight:300;
+}
+.hero-steps{
+  display:flex;align-items:center;justify-content:center;
+  gap:0;flex-wrap:wrap;
+}
+.step{
+  display:flex;align-items:center;gap:7px;
+  font-size:.8rem;color:var(--text-dim);font-weight:500;
+}
+.step-num{
+  width:22px;height:22px;border-radius:50%;
+  border:1.5px solid var(--sand);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.68rem;font-weight:700;color:var(--rust);
+  flex-shrink:0;
+}
+.step-sep{width:24px;height:1px;background:var(--sand);margin:0 4px;}
+
+/* ── FORM CARD ── */
+.form-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r-xl);
+  padding:32px;
+  box-shadow:var(--sh);
+  margin-bottom:28px;
+}
+
+/* ── GRIDS ── */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+@media(max-width:580px){.row2,.row3{grid-template-columns:1fr;}}
+
+/* ── FIELD ── */
+.field{margin-bottom:20px;}
+.field:last-child{margin-bottom:0;}
+.lbl{
+  display:flex;align-items:center;gap:6px;
+  font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--text-dim);margin-bottom:9px;
+}
+.lbl-dot{
+  width:5px;height:5px;border-radius:50%;
+  background:var(--rust);opacity:.5;flex-shrink:0;
+}
+
+.sel-wrap{position:relative;}
+.sel-wrap::after{
+  content:'▾';position:absolute;right:13px;top:50%;transform:translateY(-50%);
+  color:var(--text-dim);pointer-events:none;font-size:.75rem;
+}
+.form-select,.form-input{
+  width:100%;padding:11px 14px;
+  background:var(--surface2);
+  border:1.5px solid var(--border);
+  border-radius:var(--r);
+  font-family:'Outfit',sans-serif;font-size:.9375rem;
+  color:var(--text);
+  transition:border-color var(--t),box-shadow var(--t);
+  appearance:none;-webkit-appearance:none;
+}
+.form-select:focus,.form-input:focus{
+  outline:none;
+  border-color:var(--rust-light);
+  box-shadow:0 0 0 3px var(--rust-glow);
+}
+.form-input::placeholder{color:var(--text-dim);}
+
+.field-err{font-size:.75rem;color:var(--rust);margin-top:5px;min-height:16px;}
+
+/* ── SECTION TITLE ── */
+.section-title{
+  font-family:'Instrument Serif',serif;
+  font-size:1.05rem;color:var(--text);
+  margin-bottom:14px;letter-spacing:-.01em;
+  display:flex;align-items:baseline;gap:8px;
+}
+.section-title span{
+  font-family:'Outfit',sans-serif;
+  font-size:.75rem;font-weight:400;
+  color:var(--text-dim);
+}
+
+/* ── ACTIVITY CARDS ── */
+.activities-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
+  gap:9px;
+  margin-bottom:28px;
+}
+@media(max-width:460px){.activities-grid{grid-template-columns:1fr 1fr;}}
+
+.act-card{
+  position:relative;
+  padding:13px 13px 11px;
+  background:var(--surface2);
+  border:1.5px solid var(--border);
+  border-radius:var(--r);
+  cursor:pointer;
+  transition:all .22s cubic-bezier(.4,0,.2,1);
+  text-align:left;overflow:hidden;
+  opacity:0;transform:translateY(10px);
+  animation:cardIn .38s ease forwards;
+}
+.act-card::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 0%,rgba(196,92,62,.06),transparent 70%);
+  opacity:0;transition:opacity var(--t);
+}
+.act-card:hover{
+  border-color:rgba(196,92,62,.35);
+  transform:translateY(-2px);
+  box-shadow:0 6px 20px rgba(100,50,20,.1);
+}
+.act-card:hover::before{opacity:1;}
+.act-card.selected{
+  border-color:var(--rust);
+  background:var(--rust-pale);
+  box-shadow:0 0 0 1px var(--rust-light),0 6px 20px rgba(196,92,62,.15);
+}
+.act-card.selected::before{opacity:1;}
+
+.act-emoji{font-size:1.35rem;display:block;margin-bottom:7px;line-height:1;}
+.act-name{font-size:.8rem;font-weight:700;color:var(--text);line-height:1.3;margin-bottom:2px;}
+.act-desc{font-size:.69rem;color:var(--text-dim);line-height:1.4;font-weight:400;}
+.act-check{
+  position:absolute;top:9px;right:9px;
+  width:18px;height:18px;border-radius:50%;
+  background:var(--rust);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.6rem;color:#fff;font-weight:800;
+  opacity:0;transform:scale(.4);
+  transition:all .2s cubic-bezier(.34,1.56,.64,1);
+}
+.act-card.selected .act-check{opacity:1;transform:scale(1);}
+
+@keyframes cardIn{to{opacity:1;transform:translateY(0);}}
+.act-card:nth-child(1){animation-delay:.03s}.act-card:nth-child(2){animation-delay:.05s}
+.act-card:nth-child(3){animation-delay:.07s}.act-card:nth-child(4){animation-delay:.09s}
+.act-card:nth-child(5){animation-delay:.11s}.act-card:nth-child(6){animation-delay:.13s}
+.act-card:nth-child(7){animation-delay:.15s}.act-card:nth-child(8){animation-delay:.17s}
+.act-card:nth-child(9){animation-delay:.19s}.act-card:nth-child(10){animation-delay:.21s}
+.act-card:nth-child(11){animation-delay:.23s}.act-card:nth-child(12){animation-delay:.25s}
+.act-card:nth-child(13){animation-delay:.27s}.act-card:nth-child(14){animation-delay:.29s}
+.act-card:nth-child(15){animation-delay:.31s}.act-card:nth-child(16){animation-delay:.33s}
+.act-card:nth-child(17){animation-delay:.35s}.act-card:nth-child(18){animation-delay:.37s}
+
+/* ── INTERESTS ── */
+.interests-row{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:28px;}
+.int-pill{
+  padding:7px 13px;
+  border:1.5px solid var(--border);
+  border-radius:99px;
+  background:var(--surface2);
+  font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:500;
+  color:var(--text-mid);cursor:pointer;
+  transition:all var(--t);
+  display:flex;align-items:center;gap:5px;
+  user-select:none;
+}
+.int-pill:hover{border-color:var(--rust-light);color:var(--text);background:var(--rust-pale);}
+.int-pill.on{border-color:var(--rust);background:var(--rust-pale);color:var(--rust);}
+
+.custom-int-wrap{display:flex;align-items:center;gap:6px;}
+.custom-int-inp{
+  padding:6px 12px;
+  border:1.5px dashed rgba(196,92,62,.35);
+  border-radius:99px;
+  background:var(--rust-pale);
+  font-family:'Outfit',sans-serif;font-size:.8rem;
+  color:var(--text);width:130px;outline:none;
+  transition:all var(--t);
+}
+.custom-int-inp:focus{
+  border-style:solid;border-color:var(--rust);
+  width:158px;box-shadow:0 0 0 3px var(--rust-glow);
+}
+.custom-int-inp::placeholder{color:var(--text-dim);}
+.custom-int-btn{
+  width:28px;height:28px;border-radius:50%;border:none;
+  background:var(--rust);color:#fff;
+  font-size:1.1rem;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all var(--t);flex-shrink:0;
+  box-shadow:0 2px 8px rgba(196,92,62,.3);
+}
+.custom-int-btn:hover{background:var(--rust-dark);transform:scale(1.1);}
+.int-pill.custom-on{
+  border-color:var(--rust);background:var(--rust-pale);color:var(--rust);
+}
+.pill-x{
+  font-size:.6rem;width:13px;height:13px;border-radius:50%;
+  background:rgba(196,92,62,.15);
+  display:flex;align-items:center;justify-content:center;
+  transition:background var(--t);cursor:pointer;margin-left:2px;
+}
+.pill-x:hover{background:rgba(196,92,62,.3);}
+
+/* ── GENERATE BUTTON ── */
+.gen-btn{
+  width:100%;padding:15px 28px;
+  background:linear-gradient(135deg,var(--rust-dark) 0%,var(--rust-light) 100%);
+  border:none;border-radius:var(--r);
+  font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;
+  color:#fff;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  box-shadow:0 4px 18px rgba(196,92,62,.3);
+  transition:all .25s cubic-bezier(.4,0,.2,1);
+  letter-spacing:.01em;
+}
+.gen-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 26px rgba(196,92,62,.38);}
+.gen-btn:active:not(:disabled){transform:translateY(0);}
+.gen-btn:disabled{opacity:.55;cursor:not-allowed;}
+.gen-btn .spin{
+  width:16px;height:16px;
+  border:2px solid rgba(255,255,255,.3);border-top-color:#fff;
+  border-radius:50%;animation:spin .7s linear infinite;display:none;
+}
+.gen-btn.loading .spin{display:block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── OUTPUT ── */
+.output-section{
+  opacity:0;transform:translateY(18px);
+  transition:all .4s cubic-bezier(.4,0,.2,1);
+  pointer-events:none;
+}
+.output-section.visible{opacity:1;transform:translateY(0);pointer-events:all;}
+
+.output-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;flex-wrap:wrap;gap:10px;
+}
+.output-title{
+  font-family:'Instrument Serif',serif;
+  font-size:1.3rem;color:var(--text);
+}
+.output-chips{display:flex;gap:7px;flex-wrap:wrap;}
+.output-chip{
+  font-size:.68rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+  padding:4px 10px;border-radius:99px;
+  border:1.5px solid var(--border2);color:var(--text-dim);
+}
+.output-chip.lit{border-color:rgba(196,92,62,.3);color:var(--rust);background:var(--rust-pale);}
+
+.prompt-box{
+  background:var(--surface2);
+  border:1.5px solid var(--border2);
+  border-radius:var(--r-lg);
+  padding:22px;
+  font-family:'Outfit',sans-serif;
+  font-size:.81rem;line-height:1.9;
+  color:var(--text-mid);
+  white-space:pre-wrap;word-break:break-word;
+  max-height:56vh;overflow-y:auto;
+  margin-bottom:14px;
+}
+.ps{color:var(--rust);font-weight:700;}
+.pk{color:var(--text);font-weight:600;}
+.pv{color:var(--text-mid);}
+
+.output-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.out-btn{
+  flex:1;min-width:120px;padding:11px 16px;
+  border:1.5px solid var(--border2);border-radius:var(--r);
+  background:var(--surface);
+  font-family:'Outfit',sans-serif;font-size:.84rem;font-weight:600;
+  color:var(--text-mid);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  transition:all var(--t);
+}
+.out-btn:hover{border-color:var(--rust-light);color:var(--rust);background:var(--rust-pale);}
+.out-btn.pri{background:var(--rust);border-color:var(--rust);color:#fff;}
+.out-btn.pri:hover{background:var(--rust-dark);border-color:var(--rust-dark);}
+.out-btn.copied{background:rgba(74,140,92,.1);border-color:rgba(74,140,92,.4);color:var(--green);}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:28px;left:50%;
+  transform:translateX(-50%) translateY(70px);
+  background:var(--text);color:#fff;
+  border:1px solid rgba(255,255,255,.1);
+  padding:11px 22px;border-radius:var(--r);
+  font-size:.875rem;font-weight:500;
+  box-shadow:var(--sh2);
+  z-index:1000;opacity:0;
+  transition:all .25s cubic-bezier(.4,0,.2,1);
+  pointer-events:none;
+  display:flex;align-items:center;gap:8px;
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+.toast.ok{background:var(--green);}
+.toast.err{background:var(--rust);}
+
+/* ── FOOTER ── */
+.footer{
+  text-align:center;margin-top:52px;padding:22px 0;
+  border-top:1px solid var(--border);
+  font-size:.78rem;color:var(--text-dim);
+}
+.footer a{color:var(--rust);text-decoration:none;}
+.footer a:hover{color:var(--rust-dark);}
+</style>
+</head>
+<body>
+<div class="ambient"></div>
+<div class="toast" id="toast"></div>
+
+<div class="page">
+
+  <header class="header">
+    <a href="#" class="logo">
+      <div class="logo-mark">📚</div>
+      <div class="logo-name">Fresh<em>Teacher</em></div>
+    </a>
+    <span class="badge-free">Free Tool</span>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">AI Image Prompt Generator</div>
+    <h1 class="hero-title">
+      Create <em>stunning</em> worksheets<br>in seconds
+    </h1>
+    <p class="hero-sub">
+      Pick an activity, set your student's age and interests — get a ready-to-use prompt for Midjourney, DALL·E, or any AI image tool.
+    </p>
+    <div class="hero-steps">
+      <div class="step"><div class="step-num">1</div>Choose activity</div>
+      <div class="step-sep"></div>
+      <div class="step"><div class="step-num">2</div>Set age & topic</div>
+      <div class="step-sep"></div>
+      <div class="step"><div class="step-num">3</div>Copy prompt</div>
+      <div class="step-sep"></div>
+      <div class="step"><div class="step-num">4</div>Generate image</div>
+    </div>
+  </section>
+
+  <div class="form-card">
+
+    <div class="section-title">Choose Activity Type <span>— pick one</span></div>
+    <div class="activities-grid" id="actGrid"></div>
+
+    <div class="section-title" style="margin-top:8px;">Student Details</div>
+    <div class="row3" style="margin-bottom:20px;">
+      <div class="field">
+        <div class="lbl"><span class="lbl-dot"></span>Language</div>
+        <div class="sel-wrap">
+          <select class="form-select" id="lang">
+            <option value="English" selected>English 🇬🇧</option>
+            <option value="German">Deutsch 🇩🇪</option>
+            <option value="Spanish">Español 🇪🇸</option>
+            <option value="French">Français 🇫🇷</option>
+            <option value="Russian">Русский 🇷🇺</option>
+            <option value="Chinese">中文 🇨🇳</option>
+            <option value="Japanese">日本語 🇯🇵</option>
+            <option value="Italian">Italiano 🇮🇹</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <div class="lbl"><span class="lbl-dot"></span>Student Age</div>
+        <input type="number" class="form-input" id="age" placeholder="e.g. 8" min="3" max="18">
+        <div class="field-err" id="age-err"></div>
+      </div>
+      <div class="field">
+        <div class="lbl"><span class="lbl-dot"></span>Difficulty</div>
+        <div class="sel-wrap">
+          <select class="form-select" id="diff">
+            <option value="easy">🟢 Easy</option>
+            <option value="medium" selected>🟡 Medium</option>
+            <option value="hard">🔴 Hard</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="row2" style="margin-bottom:20px;">
+      <div class="field">
+        <div class="lbl"><span class="lbl-dot"></span>Vocabulary Topic</div>
+        <input type="text" class="form-input" id="vocab" placeholder="e.g. animals, colours, food…">
+      </div>
+      <div class="field">
+        <div class="lbl"><span class="lbl-dot"></span>Grammar Focus</div>
+        <input type="text" class="form-input" id="gram" placeholder="e.g. Present Simple, plurals…">
+      </div>
+    </div>
+
+    <div class="section-title">Student Interests <span>— select all that apply</span></div>
+    <div class="interests-row" id="intRow"></div>
+
+    <button class="gen-btn" id="genBtn" type="button">
+      <div class="spin"></div>
+      <span class="gen-txt">✦ Generate Prompt</span>
+    </button>
+  </div>
+
+  <div class="output-section" id="outputSec">
+    <div class="output-header">
+      <div class="output-title">Your Prompt</div>
+      <div class="output-chips">
+        <div class="output-chip" id="chipAct">—</div>
+        <div class="output-chip" id="chipAge">—</div>
+        <div class="output-chip" id="chipDiff">—</div>
+      </div>
+    </div>
+    <div class="prompt-box" id="promptBox"></div>
+    <div class="output-actions">
+      <button class="out-btn pri" id="copyBtn">📋 Copy Prompt</button>
+      <button class="out-btn" id="dlBtn">💾 Download .txt</button>
+      <button class="out-btn" id="regenBtn">↺ Regenerate</button>
+    </div>
+  </div>
+
+  <footer class="footer">
+    Made with ♥ by <a href="#">FreshTeacher</a> · Free AI tool for ESL teachers
+  </footer>
+</div>
+
+<script>
+const ACTIVITIES = [
+  {id:'vocab-match',   emoji:'🎯', name:'Vocabulary Match',    desc:'Picture-to-word matching'},
+  {id:'label-img',     emoji:'🖼️', name:'Label the Image',     desc:'Name parts of an illustration'},
+  {id:'word-sort',     emoji:'📂', name:'Word Sorting',         desc:'Sort words into categories'},
+  {id:'story-starter', emoji:'✏️', name:'Story Starter',       desc:'Creative writing prompt scene'},
+  {id:'reading-hunt',  emoji:'🔍', name:'Reading Hunt',         desc:'Find & circle hidden items'},
+  {id:'grammar-fix',   emoji:'🔧', name:'Fix the Sentence',     desc:'Spot and repair grammar errors'},
+  {id:'board-game',    emoji:'🎲', name:'Board Game',           desc:'Printable path game board'},
+  {id:'cut-glue',      emoji:'✂️', name:'Cut & Glue',          desc:'Cut-out matching activity'},
+  {id:'detective',     emoji:'🕵️', name:'Detective Case',      desc:'Mystery clue investigation'},
+  {id:'comic',         emoji:'💬', name:'Comic Strip',          desc:'Fill-in dialogue bubbles'},
+  {id:'bingo',         emoji:'🟩', name:'Vocabulary Bingo',     desc:'Illustrated bingo card'},
+  {id:'adventure-map', emoji:'🗺️', name:'Adventure Map',       desc:'Fantasy quest worksheet'},
+  {id:'diary-entry',   emoji:'📔', name:'Diary / Journal',      desc:'Guided diary writing page'},
+  {id:'flashcards',    emoji:'🃏', name:'Flashcard Set',        desc:'Foldable vocabulary cards'},
+  {id:'maze',          emoji:'🌀', name:'Word Maze',             desc:'Navigate path to find words'},
+  {id:'mini-book',     emoji:'📗', name:'Mini Book',             desc:'Foldable 8-page booklet'},
+  {id:'roleplay',      emoji:'🎭', name:'Roleplay Cards',        desc:'Character scenario cards'},
+  {id:'revision-game', emoji:'🏆', name:'Revision Quiz',         desc:'Mixed-skill review game'}
+];
+
+const INTERESTS = [
+  {id:'dinosaurs', e:'🦕', n:'Dinosaurs'},
+  {id:'space',     e:'🚀', n:'Space'},
+  {id:'animals',   e:'🐾', n:'Animals'},
+  {id:'magic',     e:'✨', n:'Magic'},
+  {id:'sports',    e:'⚽', n:'Sports'},
+  {id:'pirates',   e:'🏴‍☠️', n:'Pirates'},
+  {id:'robots',    e:'🤖', n:'Robots'},
+  {id:'unicorns',  e:'🦄', n:'Unicorns'},
+  {id:'dragons',   e:'🐉', n:'Dragons'},
+  {id:'minecraft', e:'⛏️', n:'Minecraft'},
+  {id:'superheroes',e:'🦸', n:'Superheroes'},
+  {id:'cooking',   e:'👨‍🍳', n:'Cooking'},
+  {id:'nature',    e:'🌲', n:'Nature'},
+  {id:'fairies',   e:'🧚', n:'Fairies'}
+];
+
+const THEMES = {
+  dinosaurs:  {theme:'prehistoric jungle with friendly dinosaurs',    colors:'earthy greens, warm browns, volcanic oranges'},
+  space:      {theme:'outer space adventure with planets and stars',   colors:'deep navy, cosmic purple, bright star whites'},
+  animals:    {theme:'cheerful wildlife safari',                       colors:'natural greens, savanna yellows, sky blue'},
+  magic:      {theme:'enchanted fantasy world with wizards and castles',colors:'rich purples, shimmer golds, deep blues'},
+  sports:     {theme:'energetic sports stadium',                       colors:'vivid greens, whites, primary bold colors'},
+  pirates:    {theme:'swashbuckling pirate sea adventure',             colors:'ocean blues, treasure gold, weathered wood browns'},
+  robots:     {theme:'friendly futuristic robot workshop',             colors:'cool metallics, neon cyan, deep charcoal'},
+  unicorns:   {theme:'magical pastel unicorn meadow',                  colors:'soft pinks, lavender, rainbow pastels'},
+  dragons:    {theme:'dragon and castle fantasy adventure',            colors:'deep greens, fiery orange accents, stone grays'},
+  minecraft:  {theme:'Minecraft-inspired blocky pixel world',          colors:'bright pixelated greens, stone grays, sky blue'},
+  superheroes:{theme:'superhero city action scene',                    colors:'bold primary reds and blues, dramatic lighting'},
+  cooking:    {theme:'colorful cozy kitchen baking scene',             colors:'warm cream, red apples, cheerful pastels'},
+  nature:     {theme:'lush outdoor nature exploration',                colors:'rich forest greens, sky blue, wildflower purples'},
+  fairies:    {theme:'moonlit fairy garden',                           colors:'soft glowing pinks, leaf greens, sparkle golds'}
+};
+
+const DIFF_MAP = {
+  easy:  {label:'Easy',   tasks:'simple matching and circling',              support:'strong visual support, word bank included'},
+  medium:{label:'Medium', tasks:'mixed activities with short writing',        support:'moderate visual support'},
+  hard:  {label:'Hard',   tasks:'complex tasks with full written responses',  support:'minimal visual support, independent work'}
+};
+
+let selected = null;
+let activeInts = new Set();
+let customInts = [];
+let lastPrompt = '';
+
+// Render activities
+function renderActivities(){
+  const grid = document.getElementById('actGrid');
+  grid.innerHTML = '';
+  ACTIVITIES.forEach(a => {
+    const d = document.createElement('div');
+    d.className = 'act-card' + (selected===a.id?' selected':'');
+    d.innerHTML = `<div class="act-check">✓</div>
+      <span class="act-emoji">${a.emoji}</span>
+      <div class="act-name">${a.name}</div>
+      <div class="act-desc">${a.desc}</div>`;
+    d.addEventListener('click', () => {
+      selected = a.id;
+      document.querySelectorAll('.act-card').forEach(c=>c.classList.remove('selected'));
+      d.classList.add('selected');
+    });
+    grid.appendChild(d);
+  });
+}
+
+// Render interests
+function renderInterests(){
+  const row = document.getElementById('intRow');
+  row.querySelectorAll('.int-pill').forEach(p=>p.remove());
+  const addWrap = row.querySelector('.custom-int-wrap');
+
+  INTERESTS.forEach(i => {
+    const p = makePill(i.e, i.n, activeInts.has(i.id), false);
+    p.addEventListener('click', () => {
+      activeInts.has(i.id) ? activeInts.delete(i.id) : activeInts.add(i.id);
+      p.classList.toggle('on');
+    });
+    row.insertBefore(p, addWrap);
+  });
+
+  customInts.forEach(ci => {
+    const p = makePill(ci.emoji, ci.name, true, true);
+    p.querySelector('.pill-x')?.addEventListener('click', e => {
+      e.stopPropagation();
+      customInts = customInts.filter(x=>x.id!==ci.id);
+      renderInterests();
+    });
+    row.insertBefore(p, addWrap);
+  });
+}
+
+function makePill(emoji, name, active, isCustom){
+  const p = document.createElement('div');
+  p.className = 'int-pill' + (active?' on':'') + (isCustom?' custom-on':'');
+  p.innerHTML = `<span>${emoji}</span><span>${name}</span>`;
+  if(isCustom){
+    const x = document.createElement('span');
+    x.className = 'pill-x'; x.textContent = '×';
+    p.appendChild(x);
+  }
+  return p;
+}
+
+function addCustomInt(){
+  const inp = document.getElementById('customIntInp');
+  const raw = inp.value.trim();
+  if(!raw) return;
+  if(raw.length>25){ toast('Max 25 characters','err'); return; }
+  const lower = raw.toLowerCase();
+  const all = [...INTERESTS.map(i=>i.n.toLowerCase()), ...customInts.map(i=>i.name.toLowerCase())];
+  if(all.includes(lower)){ toast('Already in the list!','err'); return; }
+  const emojiMap = {'cat':'🐱','dog':'🐶','fish':'🐟','car':'🚗','music':'🎵','art':'🎨',
+    'book':'📚','dance':'💃','swim':'🏊','lego':'🧱','pokemon':'⚡','chess':'♟️','horse':'🐴'};
+  let emoji = '⭐';
+  for(const [k,e] of Object.entries(emojiMap)){ if(lower.includes(k)){emoji=e;break;} }
+  customInts.push({id:'c_'+Date.now(), emoji, name:raw});
+  inp.value = '';
+  renderInterests();
+}
+
+// Generate
+function generate(){
+  const ageVal = document.getElementById('age').value;
+  const age = parseInt(ageVal);
+  const errEl = document.getElementById('age-err');
+  if(!selected){ toast('Please select an activity first','err'); return; }
+  if(!ageVal || isNaN(age) || age<3 || age>18){
+    errEl.textContent='Enter age between 3–18';
+    document.getElementById('age').style.borderColor='rgba(196,92,62,.5)';
+    return;
+  }
+  errEl.textContent='';
+  document.getElementById('age').style.borderColor='';
+
+  const btn = document.getElementById('genBtn');
+  btn.classList.add('loading'); btn.disabled=true;
+  setTimeout(()=>{
+    const p = buildPrompt();
+    lastPrompt = p;
+    renderOutput(p);
+    btn.classList.remove('loading'); btn.disabled=false;
+    const sec = document.getElementById('outputSec');
+    sec.classList.add('visible');
+    sec.scrollIntoView({behavior:'smooth',block:'start'});
+    toast('Prompt ready ✦','ok');
+  }, 480);
+}
+
+function buildPrompt(){
+  const act   = ACTIVITIES.find(a=>a.id===selected);
+  const lang  = document.getElementById('lang').value;
+  const age   = document.getElementById('age').value;
+  const diff  = document.getElementById('diff').value;
+  const vocab = document.getElementById('vocab').value.trim() || 'general vocabulary';
+  const gram  = document.getElementById('gram').value.trim() || 'general language';
+  const dm    = DIFF_MAP[diff];
+
+  const allInts = [
+    ...INTERESTS.filter(i=>activeInts.has(i.id)).map(i=>i.n),
+    ...customInts.map(i=>i.name)
+  ];
+  const primaryId = [...activeInts][0];
+  const theme = (primaryId && THEMES[primaryId]) ? THEMES[primaryId] : {
+    theme: allInts.length>0 ? allInts[0]+' themed world' : 'clean friendly educational',
+    colors: 'soft blues, warm neutrals, friendly pastels'
+  };
+
+  const ageNum = parseInt(age);
+  const ageStyle = ageNum<=6
+    ? 'very large objects, thick bold outlines, maximum simplicity, extra white space'
+    : ageNum<=10
+      ? 'medium-sized objects, clear outlines, friendly cartoon style, good white space'
+      : 'detailed but clear, slightly more sophisticated, standard spacing';
+
+  return `You are an expert educational illustrator creating a printable ${lang} language worksheet for children.
+
+## WORKSHEET TYPE
+${act.emoji} ${act.name} — ${act.desc}
+Language: ${lang} | Age: ${age} years | Level: ${dm.label}
+
+## VISUAL STYLE
+- Art style: flat design, modern educational illustration, child-friendly
+- Image type: clean printable worksheet layout, A4 portrait
+- Background: white or very light — must print cleanly
+- Illustration style for age ${age}: ${ageStyle}
+- Color scheme: ${theme.colors}
+- Theme: ${theme.theme}${allInts.length>1 ? '\n- Additional interests: '+allInts.slice(1).join(', ') : ''}
+
+## EDUCATIONAL CONTENT
+- Activity: ${act.name}
+- Vocabulary: ${vocab}
+- Grammar focus: ${gram}
+- Tasks: ${dm.tasks}
+- Support level: ${dm.support}
+
+## LAYOUT REQUIREMENTS
+- Page format: A4 portrait (210 × 297 mm), 15mm margins
+- Title bar at top: worksheet name + small decorative element matching theme
+- Clear activity instructions in ${lang} (child-readable font, large)
+- 6 task items, clearly numbered (1–6)
+- Answer spaces: dotted lines or light-bordered boxes
+- Consistent visual theme throughout all task items
+- Optional: name / date field in top-right corner
+- Bottom: small encouraging message (e.g. "Great job! ⭐")
+
+## PRINT SPECIFICATIONS
+- White background — no dark fills
+- Works in black & white (grayscale safe)
+- No transparency or complex gradients
+- Clean, professional finish at 300 DPI
+- No watermarks or placeholder text
+
+## STRICT NO-LIST
+✗ No distorted faces or hands
+✗ No overlapping text or objects
+✗ No unreadable decorative fonts
+✗ No dark backgrounds
+✗ No text in languages other than ${lang}
+✗ No violence or scary imagery
+✗ No blank task sections
+✗ No lorem ipsum
+
+## OUTPUT
+A single complete, print-ready worksheet image that a teacher can immediately use in class. Every task clearly visible, theme-consistent, professionally designed for a ${age}-year-old learning ${lang}.`;
+}
+
+function renderOutput(text){
+  const act  = ACTIVITIES.find(a=>a.id===selected);
+  const age  = document.getElementById('age').value;
+  const diff = document.getElementById('diff').value;
+  document.getElementById('chipAct').textContent  = act.emoji+' '+act.name;
+  document.getElementById('chipAge').textContent  = '👤 Age '+age;
+  document.getElementById('chipDiff').textContent = DIFF_MAP[diff].label;
+  ['chipAct','chipAge','chipDiff'].forEach(id=>document.getElementById(id).classList.add('lit'));
+
+  const lines = text.split('\n');
+  const html  = lines.map(line=>{
+    if(line.startsWith('## '))   return `<span class="ps">${esc(line)}</span>`;
+    if(line.startsWith('✗')||line.startsWith('-')) return `<span class="pv">${esc(line)}</span>`;
+    if(line.includes(': ')&&!line.startsWith(' ')&&!line.startsWith('✗')) return `<span class="pk">${esc(line)}</span>`;
+    return `<span class="pv">${esc(line)}</span>`;
+  }).join('\n');
+  document.getElementById('promptBox').innerHTML = html;
+}
+
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function copyP(){
+  if(!lastPrompt){ toast('Generate a prompt first','err'); return; }
+  navigator.clipboard.writeText(lastPrompt).then(()=>{
+    const btn = document.getElementById('copyBtn');
+    btn.textContent='✅ Copied!'; btn.classList.add('copied');
+    setTimeout(()=>{ btn.innerHTML='📋 Copy Prompt'; btn.classList.remove('copied','pri'); btn.classList.add('pri'); },2200);
+  }).catch(()=>{
+    const t=document.createElement('textarea');
+    t.value=lastPrompt;t.style.position='fixed';
+    document.body.appendChild(t);t.select();
+    try{document.execCommand('copy');toast('Copied!','ok');}catch(e){toast('Copy failed','err');}
+    document.body.removeChild(t);
+  });
+}
+
+function dlP(){
+  if(!lastPrompt){ toast('Generate first','err'); return; }
+  const b=new Blob([lastPrompt],{type:'text/plain;charset=utf-8'});
+  const u=URL.createObjectURL(b);
+  const a=document.createElement('a');
+  a.href=u;a.download='freshteacher-prompt.txt';
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(u);
+  toast('Downloaded ✓','ok');
+}
+
+let toastT=null;
+function toast(msg,type=''){
+  clearTimeout(toastT);
+  const el=document.getElementById('toast');
+  el.textContent=msg;
+  el.className='toast show'+(type?' '+type:'');
+  toastT=setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+// Init
+renderActivities();
+
+// Inject interests add-wrap then render
+const intRow = document.getElementById('intRow');
+const addWrap = document.createElement('div');
+addWrap.className='custom-int-wrap';
+addWrap.innerHTML=`<input type="text" class="custom-int-inp" id="customIntInp" placeholder="Add your own…" maxlength="25"><button class="custom-int-btn" id="addIntBtn" title="Add interest">+</button>`;
+intRow.appendChild(addWrap);
+renderInterests();
+
+document.getElementById('genBtn').addEventListener('click', generate);
+document.getElementById('copyBtn').addEventListener('click', copyP);
+document.getElementById('dlBtn').addEventListener('click', dlP);
+document.getElementById('regenBtn').addEventListener('click', generate);
+document.getElementById('addIntBtn').addEventListener('click', addCustomInt);
+document.getElementById('customIntInp').addEventListener('keydown', e=>{ if(e.key==='Enter'){e.preventDefault();addCustomInt();} });
+</script>
+</body>
+</html>
